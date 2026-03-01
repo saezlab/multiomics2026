@@ -1,0 +1,19 @@
+[project]
+name = "corneto-multiomics-tutorial"
+version = "0.1.0"
+description = "Multi-omics data integration with CORNETO — EBI training project"
+requires-python = ">=3.12"
+dependencies = [
+    # Network inference
+    "corneto[os] @ git+https://github.com/saezlab/corneto",
+    # Activity inference
+    "decoupler>=1.9.0",
+    # Prior knowledge
+    "omnipath @ git+https://github.com/saezlab/omnipath",
+    # Data handling
+    "pandas>=2.0",
+    # Visualization
+    "matplotlib>=3.5",
+    "graphviz>=0.20",
+    "seaborn>=0.13",
+]
