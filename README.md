@@ -62,13 +62,34 @@ developed in our group. To use better the limited time available in the
 training, we will focus 90% on the CORNETO part, using only `corneto` (with its
 dependencies) and standard data handling and visualisation tools.
 
-**Reference:** Tüchler, Burtscher *et al.* "Dynamic multi-omics and
-mechanistic modeling approach uncovers novel mechanisms of kidney fibrosis
-progression." *Mol. Syst. Biol.* 21:1030–1065 (2025).
+### References
 
-References needed:
-Software: OmniPath, Decoupler, CORNETO, CARNIVAL, COSMOS
-The kidney patient validation paper used and referenced in Tuchler et al.
+- Tüchler N, Burtscher ML *et al.* "Dynamic multi-omics and mechanistic
+  modeling approach uncovers novel mechanisms of kidney fibrosis progression."
+  *Mol. Syst. Biol.* 21:1030–1065 (2025).
+  [doi:10.1038/s44320-025-00116-2](https://doi.org/10.1038/s44320-025-00116-2)
+- Rodriguez-Mier P, Garrido-Rodriguez M, Gabor A, Saez-Rodriguez J. "Unifying
+  multi-sample network inference from prior knowledge and omics data with
+  CORNETO." *Nat. Mach. Intell.* 7:1168–1186 (2025).
+  [doi:10.1038/s42256-025-01069-9](https://doi.org/10.1038/s42256-025-01069-9)
+- Türei D, Schaul J, Palacio-Escat N, Bohár B *et al.* "OmniPath: integrated
+  knowledgebase for multi-omics analysis." *Nucleic Acids Res.*
+  54(D1):D652–D660 (2026).
+  [doi:10.1093/nar/gkaf1126](https://doi.org/10.1093/nar/gkaf1126)
+- Badia-i-Mompel P *et al.* "decoupleR: ensemble of computational methods to
+  infer biological activities from omics data." *Bioinform. Adv.* 2:vbac016
+  (2022). [doi:10.1093/bioadv/vbac016](https://doi.org/10.1093/bioadv/vbac016)
+- Liu A, Trairatphisan P, Gjerga E *et al.* "From expression footprints to
+  causal pathways: contextualizing large signaling networks with CARNIVAL."
+  *npj Syst. Biol. Appl.* 5:40 (2019).
+  [doi:10.1038/s41540-019-0118-z](https://doi.org/10.1038/s41540-019-0118-z)
+- Dugourd A *et al.* "Causal integration of multi-omics data with prior
+  knowledge to generate mechanistic hypotheses." *Mol. Syst. Biol.*
+  17:e9730 (2021).
+  [doi:10.15252/msb.20209730](https://doi.org/10.15252/msb.20209730)
+- Kuppe C *et al.* "Decoding myofibroblast origins in human kidney fibrosis."
+  *Nature* 589:281–286 (2021).
+  [doi:10.1038/s41586-020-2941-1](https://doi.org/10.1038/s41586-020-2941-1)
 
 ## Setup
 
