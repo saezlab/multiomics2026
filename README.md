@@ -137,7 +137,7 @@ uv run python
 ```
 data/
   differential/
-    diff_expr_all.tsv          # Differential expression, all omics & time points
+    diff_expr_all.tsv.gz       # Differential expression, all omics & time points
     activities.tsv             # TF and kinase activity scores
   network/
     paper_edges.tsv            # Published network edges (for comparison)
@@ -196,7 +196,7 @@ and interpret the findings in the context of kidney fibrosis biology.
 The input data comes from the supplementary tables of [Tüchler *et al.*
 (2025)](#references):
 
-- **Differential expression** (`diff_expr_all.tsv`): Log fold changes and
+- **Differential expression** (`diff_expr_all.tsv.gz`): Log fold changes and
   adjusted p-values for all omics modalities (rna, proteomics,
   phosphoproteomics, secretomics) across 7 time points after TGF-beta
   stimulation vs. control. 391,105 measurements.

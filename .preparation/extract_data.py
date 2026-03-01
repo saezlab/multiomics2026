@@ -6,6 +6,7 @@ it as a tab-separated file into the project data/ directory.
 """
 
 from pathlib import Path
+import gzip
 
 import openpyxl
 import csv
@@ -15,7 +16,7 @@ DATA_DIR = Path(__file__).parent / "data"
 
 # Mapping: (xlsx filename suffix, output path, description)
 TABLES = [
-    ("MOESM4_ESM.xlsx", "differential/diff_expr_all.tsv",
+    ("MOESM4_ESM.xlsx", "differential/diff_expr_all.tsv.gz",
      "Differential expression results, all omics"),
     ("MOESM6_ESM.xlsx", "differential/tf_activities_ev3.tsv",
      "TF activity enrichment results (from EV3 only, no kinases)"),
@@ -43,7 +44,8 @@ def extract_sheet(xlsx_path: Path, output_path: Path):
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, "w", newline="") as f:
+    opener = gzip.open if output_path.suffix == ".gz" else open
+    with opener(output_path, "wt", newline="") as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
         for row in ws.iter_rows(values_only=True):
             # Clean newlines within cells (e.g. "Kinase/\nphosphatase")
@@ -63,7 +65,7 @@ def main():
         print(f"  {xlsx_path.name} -> {rel_path} ... ", end="", flush=True)
         extract_sheet(xlsx_path, output_path)
         # Count lines
-        n_lines = sum(1 for _ in open(output_path)) - 1  # minus header
+        n_lines = sum(1 for _ in opener(output_path, "rt")) - 1  # minus header
         print(f"{n_lines} rows")
 
     print("\nDone. All data extracted to", DATA_DIR)

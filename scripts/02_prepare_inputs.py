@@ -28,7 +28,7 @@ RESULTS_DIR.mkdir(exist_ok=True)
 
 # %% 1. Load data
 
-diff_expr = pd.read_csv(DATA_DIR / "differential" / "diff_expr_all.tsv", sep="\t")
+diff_expr = pd.read_csv(DATA_DIR / "differential" / "diff_expr_all.tsv.gz", sep="\t")
 activities = pd.read_csv(DATA_DIR / "differential" / "activities.tsv", sep="\t")
 
 print(f"Differential expression: {len(diff_expr)} rows")

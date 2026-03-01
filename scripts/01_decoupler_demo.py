@@ -31,7 +31,7 @@ RESULTS_DIR.mkdir(exist_ok=True)
 
 # %% Load differential expression data
 
-diff_expr = pd.read_csv(DATA_DIR / "differential" / "diff_expr_all.tsv", sep="\t")
+diff_expr = pd.read_csv(DATA_DIR / "differential" / "diff_expr_all.tsv.gz", sep="\t")
 
 print(f"Loaded {len(diff_expr)} rows")
 print(f"Modalities: {diff_expr['modality'].unique()}")
