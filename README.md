@@ -8,13 +8,14 @@ the activities to a prior-knowledge network, and then use optimisation methods
 to infer networks that the most plausibly explain the activity patterns given
 the known perturbations.
 This project carries quite some similarities with the [COSMOS project led by
-Aurelien Dugourd](https://github.com/saezlab/COSMOS_basic). However, there are
-important differences:
+Aurelien Dugourd](https://github.com/saezlab/COSMOS_basic) (Dugourd *et al.*,
+2021; 2024). However, there are important differences:
 - The COSMOS project uses metabolomics in addition to transcriptomics, while
     here we can use phosphoproteomics, proteomics, and secretomics
 - The COSMOS project uses the `cosmosR` R package with its dedicated
     prior-knowledge network: this is an out-of-the-box solution which uses the
-    old R implementation of the CARNIVAL network optimisation method
+    old R implementation of the CARNIVAL (Liu *et al.*, 2019) network
+    optimisation method
 - Within the next 1-2 years the original COSMOS will be replaced by much more
     customisable and feature-rich solutions within the Python ecosystem
 - In this project, we use the already available new Python components to
@@ -23,8 +24,8 @@ important differences:
 
 ## Data and study background
 
-Our example data comes from a study of kidney fibrosis by Tüchler *et al.*
-(2025). It employs an _in vitro_ model of TGF-beta-induced fibrotic
+Our example data comes from a study of kidney fibrosis by [Tüchler *et al.*
+(2025)](#references). It employs an _in vitro_ model of TGF-beta-induced fibrotic
 transformation of PDGFR-beta positive patient derived kidney mesenchymal cells.
 These cells are similar to myofibroblasts, the main cell type responsible for
 excess extracellular matrix (ECM) deposition in fibrosis. The study generated a
@@ -53,9 +54,10 @@ are derived from the late secretomics.
 Our workflow consists of tools developed in the [Saez
 Lab](https://saezlab.org/):
 
-- **Decoupler** for activity inference
-- **OmniPath** for prior knowledge network retrieval
-- **CORNETO** for integer linear (ILP) network optimization
+- **Decoupler** (Badia-i-Mompel *et al.*, 2022) for activity inference
+- **OmniPath** (Türei *et al.*, 2026) for prior knowledge network retrieval
+- **CORNETO** (Rodriguez-Mier *et al.*, 2025) for integer linear (ILP)
+  network optimization
 
 These are the key components of the mechanistic modeling approach used and
 developed in our group. To use better the limited time available in the
@@ -87,6 +89,10 @@ dependencies) and standard data handling and visualisation tools.
   knowledge to generate mechanistic hypotheses." *Mol. Syst. Biol.*
   17:e9730 (2021).
   [doi:10.15252/msb.20209730](https://doi.org/10.15252/msb.20209730)
+- Dugourd A, Lafrenz P, Mañanes D, Paton V, Fallegger R, Kroger AC, Türei D,
+  Shtylla B, Saez-Rodriguez J. "Modeling causal signal propagation in
+  multi-omic factor space with COSMOS." *bioRxiv* (2024).
+  [doi:10.1101/2024.07.15.603538](https://doi.org/10.1101/2024.07.15.603538)
 - Kuppe C *et al.* "Decoding myofibroblast origins in human kidney fibrosis."
   *Nature* 589:281–286 (2021).
   [doi:10.1038/s41586-020-2941-1](https://doi.org/10.1038/s41586-020-2941-1)
@@ -151,9 +157,10 @@ results/                       # Generated outputs (networks, figures)
 ### Introduction (30 min): Activity inference with Decoupler
 
 We start by demonstrating how transcription factor (TF) activities can be
-inferred from transcriptomics data using Decoupler and the CollecTRI
-regulon database. This shows how abstract molecular activities can be
-estimated from omics measurements, motivating the network integration step.
+inferred from transcriptomics data using Decoupler (Badia-i-Mompel *et al.*,
+2022) and the CollecTRI regulon database. This shows how abstract molecular
+activities can be estimated from omics measurements, motivating the network
+integration step.
 
 **Script:** `scripts/01_decoupler_demo.py`
 
@@ -161,15 +168,16 @@ estimated from omics measurements, motivating the network integration step.
 
 We load the differential omics data, select time points and modalities,
 and prepare the inputs for CORNETO. We retrieve a signed, directed
-protein interaction network from OmniPath, filter it for expressed genes,
-and prune it for reachability.
+protein interaction network from OmniPath (Türei *et al.*, 2026), filter it
+for expressed genes, and prune it for reachability.
 
 **Script:** `scripts/02_prepare_inputs.py`
 
 ### Session 2 (1.5 h): Network inference with CORNETO
 
-Using the CARNIVAL algorithm implemented in CORNETO, we find an optimal
-subnetwork of the prior knowledge network that connects upstream
+Using the CARNIVAL algorithm (Liu *et al.*, 2019) implemented in CORNETO
+(Rodriguez-Mier *et al.*, 2025), we find an optimal subnetwork of the prior
+knowledge network that connects upstream
 perturbations (TGF-beta stimulus, kinase and TF activities) to downstream
 measurements (secreted protein changes). The optimization balances data
 fit against network parsimony.
@@ -185,7 +193,8 @@ and interpret the findings in the context of kidney fibrosis biology.
 
 ## Data description
 
-The input data comes from the supplementary tables of Tüchler *et al.* (2025):
+The input data comes from the supplementary tables of [Tüchler *et al.*
+(2025)](#references):
 
 - **Differential expression** (`diff_expr_all.tsv`): Log fold changes and
   adjusted p-values for all omics modalities (rna, proteomics,
@@ -204,15 +213,18 @@ The input data comes from the supplementary tables of Tüchler *et al.* (2025):
 ## Key concepts
 
 - **Prior knowledge network (PKN):** A signed, directed graph of known
-  protein-protein regulatory interactions from OmniPath. Edges indicate
+  protein-protein regulatory interactions from OmniPath (Türei *et al.*,
+  2026). Edges indicate
   activation (+1) or inhibition (-1), making it a causal network suitable for
   mechanistic modeling.
 
-- **CORNETO:** "Core network optimiser" - a Python framework that is able to
-    deliver diverse network optimisation problems by diverse formulations to a
-    number of optimisation solvers (backends).
+- **CORNETO:** "Core network optimiser" (Rodriguez-Mier *et al.*, 2025) - a
+    Python framework that is able to deliver diverse network optimisation
+    problems by diverse formulations to a number of optimisation solvers
+    (backends).
 
-- **CARNIVAL:** An optimisation method that finds a subnetwork of the PKN
+- **CARNIVAL:** An optimisation method (Liu *et al.*, 2019) that finds a
+  subnetwork of the PKN
   consistent with observed perturbations (inputs) and measurements (outputs),
   while penalizing network complexity (L0 regularization on edges). It is one
   of the many optimisation methods CORNETO supports.
