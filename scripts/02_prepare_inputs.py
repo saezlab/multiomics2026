@@ -100,7 +100,36 @@ secretome_early = secretome_early[~secretome_early["id"].isin(activities_early["
 print(f"\nSecretome measurements: {len(secretome_early)}")
 print(secretome_early.head(10))
 
-# %% 5. Retrieve prior knowledge network from OmniPath
+# %% 5. Select late measurement nodes: TF and kinase activities
+#
+# For the "early-to-late" model (model 3 in the paper), the early secretome
+# and TGFB1 serve as perturbations, while late enzyme activities become
+# the measurements. This captures how the early secreted signals drive
+# changes in TF/kinase activities at later time points.
+
+LATE_TIMES = ["24h", "48h", "72h", "96h"]
+
+activities_late = (
+    activities
+    .query(
+        "time in @LATE_TIMES and "
+        "p_value < @SIGNIFICANCE_THRESHOLD and "
+        "abs(score) > @SCORE_THRESHOLD"
+    )
+    .assign(abs_score=lambda df: df["score"].abs())
+    .sort_values("abs_score", ascending=False)
+    .drop_duplicates(subset="source", keep="first")
+    [["source", "score"]]
+    .reset_index(drop=True)
+)
+
+# Remove overlap with early secretome (those are perturbations in model 3)
+activities_late = activities_late[~activities_late["source"].isin(secretome_early["id"])]
+
+print(f"\nLate measurement enzymes (significant): {len(activities_late)}")
+print(activities_late.head(10))
+
+# %% 6. Retrieve prior knowledge network from OmniPath
 #
 # We get all signed, directed protein-protein interactions.
 
@@ -109,7 +138,7 @@ pkn_raw = op.interactions.AllInteractions.get(genesymbols=True)
 
 print(f"Total initial PKN from OmniPath: {len(pkn_raw)}")
 
-# %% 6. Process PKN: select signed interactions with gene symbols
+# %% 7. Process PKN: select signed interactions with gene symbols
 #
 # With genesymbols=True, the dataframe has `source_genesymbol` and
 # `target_genesymbol` columns alongside the UniProt ID columns.
@@ -142,7 +171,7 @@ pkn = (
 print(f"\nSigned PKN: {len(pkn)} interactions")
 print(f"  Nodes: {len(set(pkn['source']) | set(pkn['target']))}")
 
-# %% 7. Filter PKN for expressed genes
+# %% 8. Filter PKN for expressed genes
 #
 # Keep only interactions where both source and target were detected
 # in at least one omics modality.
@@ -154,7 +183,7 @@ pkn_filtered = pkn[
 print(f"\nPKN filtered for expressed genes: {len(pkn_filtered)} interactions")
 print(f"  Nodes: {len(set(pkn_filtered['source']) | set(pkn_filtered['target']))}")
 
-# %% 8. Add known TGF-beta signaling edges
+# %% 9. Add known TGF-beta signaling edges
 #
 # Ensure canonical TGFB1 -> SMAD pathway edges are represented in the PKN.
 # These may help the network connect perturbation and measurement nodes.
@@ -173,7 +202,7 @@ tgfb_edges = pd.DataFrame({
 pkn_filtered = pd.concat([pkn_filtered, tgfb_edges]).drop_duplicates()
 print(f"\nPKN with TGF-beta edges: {len(pkn_filtered)} interactions")
 
-# %% 9. Filter inputs for PKN coverage
+# %% 10. Filter inputs for PKN coverage
 #
 # Keep only perturbation/measurement nodes that appear in the PKN.
 # This also demonstrates how prior-knowledge availability limits discovery:
@@ -185,12 +214,14 @@ pkn_nodes = set(pkn_filtered["source"]) | set(pkn_filtered["target"])
 
 activities_early = activities_early[activities_early["source"].isin(pkn_nodes)]
 secretome_early = secretome_early[secretome_early["id"].isin(pkn_nodes)]
+activities_late = activities_late[activities_late["source"].isin(pkn_nodes)]
 
 print(f"\nAfter PKN filtering:")
-print(f"  Perturbation enzymes: {len(activities_early)}")
-print(f"  Secretome measurements: {len(secretome_early)}")
+print(f"  Perturbation enzymes (early): {len(activities_early)}")
+print(f"  Secretome measurements (early): {len(secretome_early)}")
+print(f"  Measurement enzymes (late): {len(activities_late)}")
 
-# %% 10. Prune PKN for reachability
+# %% 11. Prune PKN for reachability
 #
 # We iteratively remove nodes that cannot be reached from perturbation
 # nodes (controllability) or that have no path to measurement nodes
@@ -220,8 +251,11 @@ def reachable_neighbors(pkn_df, n_steps, nodes, direction="downstream"):
     return pkn_df[pkn_df["source"].isin(reachable) & pkn_df["target"].isin(reachable)]
 
 
-all_input_nodes = set(activities_early["source"]) | {"TGFB1"}
-all_output_nodes = set(secretome_early["id"])
+# We include nodes from both the early model (model 2: activities → secretome)
+# and the late model (model 3: secretome → late activities), so the pruned PKN
+# supports both analyses.
+all_input_nodes = set(activities_early["source"]) | set(secretome_early["id"]) | {"TGFB1"}
+all_output_nodes = set(secretome_early["id"]) | set(activities_late["source"])
 
 # Iteratively prune until stable
 pkn_pruned = pkn_filtered.copy()
@@ -239,32 +273,41 @@ while len(pkn_pruned) != prev_size:
 # Final filter of enzymes and secretome
 activities_early = activities_early[activities_early["source"].isin(pkn_nodes)]
 secretome_early = secretome_early[secretome_early["id"].isin(pkn_nodes)]
+activities_late = activities_late[activities_late["source"].isin(pkn_nodes)]
 
 print(f"\nPruned PKN (reachability within {N_STEPS} steps):")
 print(f"  Interactions: {len(pkn_pruned)}")
 print(f"  Nodes: {len(pkn_nodes)}")
-print(f"  Perturbation enzymes: {len(activities_early)}")
-print(f"  Secretome measurements: {len(secretome_early)}")
+print(f"  Perturbation enzymes (early): {len(activities_early)}")
+print(f"  Secretome measurements (early): {len(secretome_early)}")
+print(f"  Measurement enzymes (late): {len(activities_late)}")
 
-# %% 11. Save prepared inputs
+# %% 12. Save prepared inputs
 
 pkn_pruned.to_csv(DATA_DIR / "network" / "pkn.tsv", sep="\t", index=False)
 activities_early.to_csv(DATA_DIR / "differential" / "activities_early.tsv", sep="\t", index=False)
 secretome_early.to_csv(DATA_DIR / "differential" / "secretome_early.tsv", sep="\t", index=False)
+activities_late.to_csv(DATA_DIR / "differential" / "activities_late.tsv", sep="\t", index=False)
 
 print(f"\nSaved prepared inputs:")
 print(f"  {DATA_DIR / 'network' / 'pkn.tsv'}")
 print(f"  {DATA_DIR / 'differential' / 'activities_early.tsv'}")
 print(f"  {DATA_DIR / 'differential' / 'secretome_early.tsv'}")
+print(f"  {DATA_DIR / 'differential' / 'activities_late.tsv'}")
 
 # %% Summary
 #
-# We now have three key inputs for CORNETO:
+# We now have four inputs for CORNETO:
 #
 # 1. pkn.tsv: The pruned prior knowledge network (source, mor, target)
-# 2. activities_early.tsv: Perturbation scores (TF + kinase activities)
-# 3. secretome_early.tsv: Measurement scores (secretome fold changes)
+# 2. activities_early.tsv: Early enzyme activities (perturbations for model 2)
+# 3. secretome_early.tsv: Early secretome fold changes (measurements for
+#    model 2, perturbations for model 3)
+# 4. activities_late.tsv: Late enzyme activities (measurements for model 3)
 #
-# In addition, TGFB1 = +1 is the known stimulus.
+# In addition, TGFB1 = +1 is included as a known stimulus in both models.
+#
+# Model 2 (early): activities_early + TGFB1 → secretome_early
+# Model 3 (early→late): secretome_early + TGFB1 → activities_late
 #
 # The next step (script 03) will use these to run CARNIVAL network inference.
