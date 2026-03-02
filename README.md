@@ -258,3 +258,9 @@ The input data comes from the supplementary tables of [Tüchler *et al.*
   a flow-based formulation that supports multi-sample analysis with structured
   sparsity regularization. [Read more
   here](https://corneto.org/stable/guide/signaling/carnival.html#carnivalflow).
+
+## Further materials
+
+- This is a [notebook from another training
+  ](https://colab.research.google.com/drive/1OWKpXrZdpKEK9AWopiViHWkAjjdWq_Hy),
+  you find a lot of background information and examples in it
