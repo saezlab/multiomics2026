@@ -112,12 +112,13 @@ print(f"\nData: {n_inputs} inputs, {n_outputs} outputs")
 # - Higher lambda_reg -> sparser network (fewer edges, possibly worse fit)
 # - Lower lambda_reg -> denser network (better fit, harder to interpret)
 #
-# Typical values range from 1e-4 to 1. Values around 0.01-0.1 are most
-# common. Core biology (e.g. TGFB1-SMAD cascade) is usually stable across
-# this range, while peripheral edges come and go. It is worth trying a few
-# values (e.g. 0.001, 0.01, 0.1) to see how the network changes. The
-# choice of input data (significance thresholds, which omics to include)
-# often has a larger impact than lambda_reg tuning.
+# Typical values range from 1e-4 to 1. Values around 0.01-0.1 are most common.
+# Core biology (e.g. TGFB1-SMAD cascade) is usually stable across this range,
+# while peripheral edges come and go. It is worth trying a few values (e.g.
+# 0.001, 0.01, 0.1; if measurements values are between -1 and 1, but larger
+# values of lambda can be used) to see how the network changes. The choice of
+# input data (significance thresholds, which omics to include) often has a
+# larger impact than lambda_reg tuning.
 #
 # CarnivalFlow is a specific CARNIVAL formulation that models signal
 # propagation as network flow, which makes the optimization more
