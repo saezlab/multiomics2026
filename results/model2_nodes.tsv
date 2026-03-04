@@ -7,7 +7,6 @@ ALOX12B	1.0	output
 AMIGO2	1.0	output
 ANP32A	-1.0	output
 ANP32B	-1.0	output
-APEX1	1.0	intermediate
 ARF4	-1.0	output
 ATF3	-1.0	input
 ATF6	1.0	input
@@ -21,9 +20,7 @@ C1QBP	-1.0	output
 CCN2	1.0	output
 CD63	1.0	output
 CDC42	-1.0	output
-CDK2	-1.0	intermediate
 CDK3	-1.0	input
-CDKN1A	1.0	intermediate
 CHEK1	-1.0	input
 CPE	-1.0	output
 CREB1	1.0	intermediate
@@ -31,7 +28,6 @@ CSNK2A1	1.0	input
 CSNK2A2	1.0	input
 CSPG4	1.0	output
 CSTB	1.0	output
-CTCF	1.0	intermediate
 CTNNB1	1.0	intermediate
 CTSV	1.0	output
 DKK1	1.0	output
@@ -47,13 +43,11 @@ EGR1	1.0	input
 EPAS1	1.0	input
 ETS2	-1.0	input
 FLI1	1.0	input
-FOS	1.0	intermediate
 FOSL2	1.0	input
 FOXK2	-1.0	input
 FOXL2	1.0	input
 FOXO3	1.0	intermediate
 FOXO4	-1.0	input
-FYN	1.0	intermediate
 GDF5	-1.0	output
 GDF6	1.0	output
 GLI1	-1.0	input
@@ -83,7 +77,7 @@ LGALS1	-1.0	output
 LTBP4	1.0	output
 MACROH2A1	1.0	output
 MAP2K1	1.0	input
-MAPK1	1.0	intermediate
+MAPK1	-1.0	intermediate
 MAPKAPK2	1.0	input
 MBD2	-1.0	intermediate
 MMP11	1.0	output
@@ -92,13 +86,11 @@ MMP2	1.0	output
 MNT	1.0	input
 MYC	1.0	intermediate
 NAP1L4	-1.0	output
-NFKB1	1.0	intermediate
 NFKB2	-1.0	intermediate
 NKX3-1	1.0	intermediate
 NOG	-1.0	intermediate
 NOTCH1	1.0	intermediate
 NR2F2	-1.0	input
-NR3C1	1.0	intermediate
 NR4A1	1.0	input
 NRP2	1.0	output
 NUCB1	1.0	output
@@ -140,7 +132,6 @@ SERPINE1	1.0	output
 SERPINE2	1.0	output
 SET	-1.0	output
 SFRP2	1.0	output
-SIRT1	-1.0	intermediate
 SLC39A10	1.0	output
 SMAD1	1.0	input
 SMAD3	1.0	intermediate
@@ -162,7 +153,6 @@ TEAD4	1.0	input
 TFAP2A	-1.0	input
 TGFB1	1.0	input
 TGFBI	1.0	output
-TGFBR2	-1.0	intermediate
 THAP1	1.0	input
 TOR1A	1.0	output
 TP53	-1.0	input
@@ -170,6 +160,5 @@ TUBA4A	-1.0	output
 UHMK1	-1.0	input
 UROD	1.0	output
 VDAC1	1.0	output
-YAP1	1.0	intermediate
 ZBTB4	-1.0	intermediate
 ZBTB7A	-1.0	input
