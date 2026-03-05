@@ -197,8 +197,8 @@ def run_optimization(lamBda, solver, time_limit, g , data):
         print("\nNo active edges found. Consider adjusting lambda_reg or solver settings.")
     return None
 
-lambda_values = [0.1,0.01,0.001]
-solver = ["CVXOPT", "GLPK", "GLPK_MI", "HIGHS", "SCIP", "SCIPY"]
+lambda_values = [0.01,0.001]#[0.1,0.01,0.001]
+solver = ["CVXOPT", "GLPK", "GLPK_MI", "SCIP"] #["CVXOPT", "GLPK", "GLPK_MI", "HIGHS", "SCIP", "SCIPY"]
 time_limit = [300,500]
 
 for lval in lambda_values:
