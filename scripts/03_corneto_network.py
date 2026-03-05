@@ -18,7 +18,11 @@ CARNIVAL solves an integer linear program that:
 """
 
 import pandas as pd
+import os
 from pathlib import Path
+
+# ensure Graphviz system executables are on PATH (needed on macOS with Homebrew)
+os.environ["PATH"] += ":/opt/homebrew/bin"
 
 from carnival_utils import (
     run_carnival, extract_results, plot_network,
@@ -72,7 +76,7 @@ RESULTS_DIR.mkdir(exist_ok=True)
 # efficient for large networks.
 
 LAMBDA_REG = 0.001
-SOLVER = "SCIP"
+SOLVER = "HIGHS"
 TIME_LIMIT = 300  # seconds
 
 # %% 2. Load prepared inputs
@@ -115,7 +119,7 @@ print_summary(edges_m1, nodes_m1)
 save_results(edges_m1, nodes_m1, "model1", RESULTS_DIR)
 
 g_m1 = plot_network(edges_m1, nodes_m1)
-g_m1.render(RESULTS_DIR / "network_model1", format="pdf", cleanup=True)
+g_m1.render(str(RESULTS_DIR / "network_model1"), format="pdf", cleanup=True)
 print(f"Saved model 1 plot to {RESULTS_DIR / 'network_model1.pdf'}")
 
 # %% 4. Model 2: activities + TGFB1 → early secretome
@@ -161,7 +165,7 @@ print_summary(edges_m2, nodes_m2)
 save_results(edges_m2, nodes_m2, "model2", RESULTS_DIR)
 
 g_m2 = plot_network(edges_m2, nodes_m2)
-g_m2.render(RESULTS_DIR / "network_model2", format="pdf", cleanup=True)
+g_m2.render(str(RESULTS_DIR / "network_model2"), format="pdf", cleanup=True)
 print(f"Saved model 2 plot to {RESULTS_DIR / 'network_model2.pdf'}")
 
 # %% 5. Merge models into combined early network
@@ -185,7 +189,7 @@ print_summary(edges_merged, nodes_merged)
 save_results(edges_merged, nodes_merged, "network", RESULTS_DIR)
 
 g_merged = plot_network(edges_merged, nodes_merged)
-g_merged.render(RESULTS_DIR / "network_merged", format="pdf", cleanup=True)
+g_merged.render(str(RESULTS_DIR / "network_merged"), format="pdf", cleanup=True)
 print(f"Saved merged network plot to {RESULTS_DIR / 'network_merged.pdf'}")
 
 # %% 6. How to read the network plot
