@@ -1,5 +1,4 @@
 node	value	type
-ABL1	-1.0	intermediate
 ACAT1	-1.0	output
 ADAM19	1.0	output
 AKT1	1.0	input
@@ -21,8 +20,9 @@ C1QBP	-1.0	output
 CCN2	1.0	output
 CD63	1.0	output
 CDC42	-1.0	output
+CDK1	-1.0	intermediate
 CDK3	-1.0	input
-CDK5	1.0	intermediate
+CDK5	-1.0	intermediate
 CHEK1	-1.0	input
 CPE	-1.0	output
 CREB1	1.0	intermediate
@@ -40,8 +40,9 @@ E2F4	-1.0	intermediate
 ECM1	1.0	output
 EEF1B2	-1.0	output
 EEF1D	-1.0	output
-EGF	-1.0	intermediate
+EGFR	-1.0	intermediate
 EGR1	1.0	input
+EGR2	1.0	intermediate
 EPAS1	1.0	input
 ETS2	-1.0	input
 FLI1	1.0	input
@@ -63,9 +64,10 @@ IGFBP3	1.0	output
 IGFBP7	1.0	output
 IL11	1.0	output
 INHBA	1.0	output
-IRF1	1.0	intermediate
+IRF2	1.0	intermediate
 JAK2	1.0	intermediate
 JUN	1.0	intermediate
+KDM5C	-1.0	intermediate
 KLC1	1.0	intermediate
 KLF4	-1.0	input
 KLF5	-1.0	intermediate
@@ -85,13 +87,11 @@ MMP2	1.0	output
 MNT	1.0	input
 MYC	1.0	intermediate
 NAP1L4	-1.0	output
-NFKB1	-1.0	intermediate
 NKX3-1	1.0	intermediate
 NOG	-1.0	intermediate
 NOTCH1	1.0	intermediate
 NR2F2	-1.0	input
 NR4A1	1.0	input
-NRF1	-1.0	intermediate
 NRP2	1.0	output
 NUCB1	1.0	output
 PAX6	1.0	input
@@ -99,6 +99,7 @@ PDIA5	1.0	output
 PFDN4	-1.0	output
 PHB2	1.0	output
 PIN1	1.0	output
+PITX2	-1.0	intermediate
 PLK3	-1.0	input
 PNP	1.0	output
 POSTN	1.0	output
@@ -106,7 +107,7 @@ PPM1G	-1.0	output
 PPP2CB	-1.0	input
 PRDX3	-1.0	output
 PRDX5	-1.0	output
-PRKAA2	-1.0	intermediate
+PRKACA	-1.0	intermediate
 PRKCZ	-1.0	input
 PRKD1	1.0	input
 PRKG1	1.0	input
@@ -137,7 +138,6 @@ SMAD3	1.0	intermediate
 SMAD4	1.0	input
 SMAD5	1.0	input
 SMARCA1	1.0	output
-SNAI1	-1.0	intermediate
 SNCA	-1.0	intermediate
 SP1	-1.0	intermediate
 SPARC	1.0	output
@@ -158,7 +158,7 @@ TP53	-1.0	input
 TUBA4A	-1.0	output
 UHMK1	-1.0	input
 UROD	1.0	output
-USF1	1.0	intermediate
 VDAC1	1.0	output
+XBP1	1.0	intermediate
 ZBTB4	-1.0	intermediate
 ZBTB7A	-1.0	input
