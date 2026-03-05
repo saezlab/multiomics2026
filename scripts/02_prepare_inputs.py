@@ -53,7 +53,7 @@ print(f"\nAll measured genes/proteins: {len(all_genes)}")
 # the highest |score|.
 
 EARLY_TIMES = ["0.08h", "1h", "12h"]
-SIGNIFICANCE_THRESHOLD = 0.03
+SIGNIFICANCE_THRESHOLD = 0.05 # Edited by Tanubrata from 0.03 to 0,05
 SCORE_THRESHOLD = 3
 
 activities_early = (
