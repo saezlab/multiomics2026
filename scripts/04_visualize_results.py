@@ -3,15 +3,22 @@ Network visualization and interpretation.
 
 This script visualizes the CORNETO network inference results and
 compares them with the published network from Tüchler et al. (2025).
+
+It rebuilds CORNETO Graph objects from the exported TSV files and uses
+CORNETO's signaling preset for plotting, ensuring consistency with
+the plots from script 03.
 """
 
 import pandas as pd
 import numpy as np
-import graphviz
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 
+import corneto as cn
+from corneto.graph import Graph
+
+from carnival_utils import load_results, plot_network
 
 # %% Setting up paths for data and results
 # this is not important, it's we only needed to allow us to run the same code
@@ -25,91 +32,12 @@ except NameError:
 DATA_DIR = _script_root / "data" if (_script_root / "data").is_dir() else Path("data")
 RESULTS_DIR = _script_root / "results" if (_script_root / "data").is_dir() else Path("results")
 
-# %% 1. Load results
+# %% 1. Load and plot our merged network
 
-edges = pd.read_csv(RESULTS_DIR / "network_edges.tsv", sep="\t")
-nodes = pd.read_csv(RESULTS_DIR / "network_nodes.tsv", sep="\t")
+edges, nodes = load_results("network", RESULTS_DIR)
+print(f"Our network: {len(edges)} edges, {len(nodes)} nodes")
 
-print(f"Network: {len(edges)} edges, {len(nodes)} nodes")
-
-# %% 2. Load input data for annotation
-
-activities_early = pd.read_csv(DATA_DIR / "differential" / "activities_early.tsv", sep="\t")
-secretome_early = pd.read_csv(DATA_DIR / "differential" / "secretome_early.tsv", sep="\t")
-
-input_nodes = set(activities_early["source"]) | {"TGFB1"}
-output_nodes = set(secretome_early["id"])
-
-# %% 3. Network visualization with graphviz
-#
-# Color scheme:
-# - Red fill: perturbation / stimulus (TGFB1)
-# - Pink fill: perturbation nodes (TF/kinase activities)
-# - Light green fill: measurement nodes (secretome)
-# - White: intermediate signaling nodes
-#
-# Edge colors:
-# - Red: activation signal
-# - Blue: inhibition signal
-#
-# Arrow styles:
-# - Normal arrow: activation (+1)
-# - Tee (flat end): inhibition (-1)
-
-
-def build_network_graph(edges_df, nodes_df, input_nodes, output_nodes):
-    """
-    Build a graphviz Digraph from edge and node tables.
-    """
-
-    g = graphviz.Digraph(
-        engine="dot",
-        graph_attr={
-            "rankdir": "TB",
-            "overlap": "false",
-            "splines": "true",
-            "fontname": "Helvetica",
-        },
-        node_attr={
-            "shape": "box",
-            "style": "rounded,filled",
-            "fontname": "Helvetica",
-            "fontsize": "10",
-            "fillcolor": "white",
-        },
-        edge_attr={
-            "fontname": "Helvetica",
-            "fontsize": "8",
-        },
-    )
-
-    # Determine all nodes in the network
-    network_nodes = set(edges_df["source"]) | set(edges_df["target"])
-
-    # Add nodes with type-specific colors
-    for node_name in network_nodes:
-        if node_name == "TGFB1":
-            g.node(node_name, fillcolor="#ff6b6b", fontcolor="white")
-        elif node_name in input_nodes:
-            g.node(node_name, fillcolor="#ffb3b3")
-        elif node_name in output_nodes:
-            g.node(node_name, fillcolor="#b3e6b3")
-        else:
-            g.node(node_name, fillcolor="#f0f0f0")
-
-    # Add edges with sign-specific styling
-    for _, row in edges_df.iterrows():
-        edge_color = "red" if row["edge_value"] > 0 else "blue"
-        arrowhead = "normal" if row["sign"] > 0 else "tee"
-        g.edge(row["source"], row["target"],
-               color=edge_color, arrowhead=arrowhead)
-
-    return g
-
-
-g = build_network_graph(edges, nodes, input_nodes, output_nodes)
-
-# Render to file
+g = plot_network(edges, nodes)
 g.render(RESULTS_DIR / "network", format="pdf", cleanup=True)
 g.render(RESULTS_DIR / "network", format="png", cleanup=True)
 print(f"Saved network visualization to {RESULTS_DIR / 'network.pdf'}")
@@ -117,24 +45,65 @@ print(f"Saved network visualization to {RESULTS_DIR / 'network.pdf'}")
 # Display (if in interactive environment)
 g
 
-# %% 4. Compare with published network
+# %% 2. Load and plot the published network
 #
-# Load the published network edges from the paper's supplementary data.
-# Note: the paper's "early" network is the union of phases 1 (initial:
-# TGFB1 → activities) and 2 (early: activities → secretome). Our tutorial
-# runs only phase 2, so the comparison is approximate.
+# The paper's "early" network is the union of models 1 (TGFB1 → activities)
+# and 2 (activities → secretome). We parse the paper's data format and
+# plot it with the same signaling preset for visual comparison.
 
 paper_edges = pd.read_csv(DATA_DIR / "network" / "paper_edges.tsv", sep="\t")
 paper_nodes = pd.read_csv(DATA_DIR / "network" / "paper_nodes.tsv", sep="\t")
 
-# Filter for the early network
-paper_early = paper_edges[paper_edges["network"] == "early"]
-paper_early_nodes = paper_nodes[paper_nodes["network"] == "early"]
+paper_early = paper_edges[paper_edges["network"] == "early"].copy()
+paper_early_nodes = paper_nodes[paper_nodes["network"] == "early"].copy()
 
 print(f"\nPublished early network: {len(paper_early)} edges, "
       f"{len(paper_early_nodes)} nodes")
 
-# Parse published edges: the 'sign' column contains e.g. "(1)" or "(-1)"
+# Parse sign column: "(1)" → 1, "(-1)" → -1
+paper_early["sign_int"] = paper_early["sign"].str.strip("()").astype(int)
+
+# Build CORNETO Graph from paper data
+paper_edge_tuples = list(zip(
+    paper_early["source"], paper_early["sign_int"], paper_early["target"],
+))
+G_paper = Graph.from_tuples(paper_edge_tuples)
+
+# Map paper node types to input/output roles
+PAPER_ROLE_MAP = {
+    "TF": "input",
+    "Kinase/ phosphatase": "input",
+    "Secreted proteins": "output",
+}
+
+paper_sample_data = {}
+for _, row in paper_early_nodes.iterrows():
+    role = PAPER_ROLE_MAP.get(row["type"])
+    if role:
+        paper_sample_data[row["node"]] = {
+            "value": float(row["value"]),
+            "mapping": "vertex",
+            "role": role,
+        }
+paper_data = cn.Data.from_cdict({"early": paper_sample_data})
+
+paper_vertex_map = dict(zip(paper_early_nodes["node"], paper_early_nodes["value"]))
+paper_vertex_values = [float(paper_vertex_map.get(name, 0.0)) for name in G_paper.V]
+paper_edge_values = list(paper_early["sign_int"])
+
+g_paper = G_paper.plot(
+    preset="signaling",
+    feature_data=paper_data,
+    solution={"v": paper_vertex_values, "e": paper_edge_values},
+    solution_map={"vertex": "v", "edge": "e"},
+)
+
+g_paper.render(RESULTS_DIR / "network_paper_early", format="pdf", cleanup=True)
+g_paper.render(RESULTS_DIR / "network_paper_early", format="png", cleanup=True)
+print(f"Saved paper network plot to {RESULTS_DIR / 'network_paper_early.pdf'}")
+
+# %% 3. Compare with published network
+
 paper_early_pairs = set(zip(paper_early["source"], paper_early["target"]))
 our_pairs = set(zip(edges["source"], edges["target"]))
 
@@ -161,7 +130,7 @@ print(f"  Shared nodes: {len(node_overlap)}")
 print(f"  Only in published: {len(paper_early_node_set - our_node_set)}")
 print(f"  Only in ours: {len(our_node_set - paper_early_node_set)}")
 
-# %% 5. Node degree distribution
+# %% 4. Node degree distribution
 
 if len(edges) > 0:
     degree = pd.concat([
@@ -185,7 +154,7 @@ if len(edges) > 0:
     plt.savefig(RESULTS_DIR / "degree_distribution.png", dpi=150, bbox_inches="tight")
     plt.show()
 
-# %% 6. Optional: overlay with collagen imaging data
+# %% 5. Optional: overlay with collagen imaging data
 #
 # The collagen I imaging data shows the phenotypic outcome (ECM deposition)
 # over time. We can check whether key network nodes are associated with
