@@ -45,7 +45,7 @@ def run_carnival(pkn_df, sample_data, lambda_reg=0.01, solver="SCIP",
 
     print(f"Solving with {solver} (time limit: {time_limit}s)...")
     solver_kwargs = {}
-    if solver.upper() == "SCIP":
+    if solver.upper() in ["CVXOPT", "GLPK", "GLPK_MI", "SCIP"]:
         solver_kwargs["limits/time"] = time_limit
     problem.solve(solver=solver, verbosity=1, **solver_kwargs)
 

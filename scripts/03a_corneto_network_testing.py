@@ -2,12 +2,15 @@
 CARNIVAL network inference with CORNETO.
 
 This script uses the CARNIVAL algorithm (implemented in CORNETO) to find
-an optimal subnetwork of the prior knowledge network that connects
+optimal subnetworks of the prior knowledge network that connect
 perturbations to measurements.
 
-In our "early" model (corresponding to model 2 in the paper):
-- Perturbations (inputs): TGFB1 stimulus + early TF/kinase activities
-- Measurements (outputs): early secretome fold changes
+We run two models following the paper:
+- Model 1 (TGFB1 → early activities): how does TGFB1 drive TF/kinase changes?
+- Model 2 (activities → early secretome): how do TF/kinase activities explain secretome?
+
+The two results are merged into a combined early network for comparison
+with the published network.
 
 CARNIVAL solves an integer linear program that:
 - Maximizes consistency between network edges and observed data
@@ -15,83 +18,27 @@ CARNIVAL solves an integer linear program that:
 """
 
 import pandas as pd
-import numpy as np
 from pathlib import Path
 
-import corneto as cn
-from corneto.methods.future.carnival import CarnivalFlow
-from corneto.graph import Graph
+from carnival_utils import (
+    run_carnival, extract_results, plot_network,
+    save_results, merge_networks, print_summary,
+)
 
 # %% Setting up paths for data and results
 # this is not important, it's we only needed to allow us to run the same code
 # either as a script or in an interactive session
 
-#try:
-_script_root = Path(__file__).resolve().parent.parent
-#except NameError:
-#    _script_root = Path.cwd()
+try:
+    _script_root = Path(__file__).resolve().parent.parent
+except NameError:
+    _script_root = Path.cwd()
 
 DATA_DIR = _script_root / "data" if (_script_root / "data").is_dir() else Path("data")
 RESULTS_DIR = _script_root / "results" if (_script_root / "data").is_dir() else Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
 
-# %% 1. Load prepared inputs
-
-pkn = pd.read_csv(DATA_DIR / "network" / "pkn.tsv", sep="\t")
-activities_early = pd.read_csv(DATA_DIR / "differential" / "activities_early.tsv", sep="\t")
-secretome_early = pd.read_csv(DATA_DIR / "differential" / "secretome_early.tsv", sep="\t")
-
-print(f"PKN: {len(pkn)} interactions, "
-      f"{len(set(pkn['source']) | set(pkn['target']))} nodes")
-print(f"Perturbation nodes: {len(activities_early)}")
-print(f"Measurements (secretome): {len(secretome_early)}")
-
-# %% 2. Build CORNETO Graph from PKN
-#
-# The Graph object represents the prior knowledge network.
-# Each edge is a tuple: (source, sign, target)
-
-edge_tuples = list(zip(pkn["source"], pkn["mor"], pkn["target"]))
-G = cn.graph.Graph.from_tuples(edge_tuples)
-
-print(f"\nCORNETO Graph: {G.num_vertices} vertices, {G.num_edges} edges")
-
-# %% 3. Prepare perturbation and measurement data
-#
-# CORNETO expects a dictionary of samples, where each sample maps
-# node names to their role (input/output) and observed value.
-#
-# - Inputs (perturbations): TGFB1 stimulus and TF/kinase activity scores
-# - Outputs (measurements): secretome fold changes to be explained
-
-sample_data = {}
-
-# Add TGFB1 as the known stimulus
-sample_data["TGFB1"] = {"value": 1.0, "mapping": "vertex", "role": "input"}
-
-# Add enzyme activities as perturbations
-for _, row in activities_early.iterrows():
-    sample_data[row["source"]] = {
-        "value": float(row["score"]),
-        "mapping": "vertex",
-        "role": "input",
-    }
-
-# Add secretome as measurements
-for _, row in secretome_early.iterrows():
-    sample_data[row["id"]] = {
-        "value": float(row["score"]),
-        "mapping": "vertex",
-        "role": "output",
-    }
-
-data = cn.Data.from_cdict({"early": sample_data})
-
-n_inputs = sum(1 for v in sample_data.values() if v["role"] == "input")
-n_outputs = sum(1 for v in sample_data.values() if v["role"] == "output")
-print(f"\nData: {n_inputs} inputs, {n_outputs} outputs")
-
-# %% 4. Build CARNIVAL optimization problem
+# %% 1. Parameters
 #
 # CARNIVAL finds the smallest subnetwork of the PKN that is logically
 # consistent with the observed perturbation and measurement data.
@@ -112,99 +59,127 @@ print(f"\nData: {n_inputs} inputs, {n_outputs} outputs")
 # - Higher lambda_reg -> sparser network (fewer edges, possibly worse fit)
 # - Lower lambda_reg -> denser network (better fit, harder to interpret)
 #
+# Typical values range from 1e-4 to 1. Values around 0.01-0.1 are most common.
+# Core biology (e.g. TGFB1-SMAD cascade) is usually stable across this range,
+# while peripheral edges come and go. It is worth trying a few values (e.g.
+# 0.001, 0.01, 0.1; if measurements values are between -1 and 1, but larger
+# values of lambda can be used) to see how the network changes. The choice of
+# input data (significance thresholds, which omics to include) often has a
+# larger impact than lambda_reg tuning.
+#
 # CarnivalFlow is a specific CARNIVAL formulation that models signal
 # propagation as network flow, which makes the optimization more
 # efficient for large networks.
 
-def run_optimization(lamBda, solver, time_limit, g , data):
-    print(f"\nNetwork optimization: lambda={lamBda}, solver={solver}, time_limit={time_limit}")
-    carnival = CarnivalFlow(lambda_reg=lamBda)
-    problem = carnival.build(g, data)
+LAMBDA_REG = 0.001
+SOLVER = "SCIP"
+TIME_LIMIT = 300  # seconds
 
-    print(f"\nCARNIVAL problem built (lambda_reg={lamBda})")
+# %% 2. Load prepared inputs
 
-    print(f"\nSolving with {solver} (time limit: {time_limit}s)...")
-    problem.solve(solver=solver, verbosity=1, **{"limits/time": time_limit})
+activities_early = pd.read_csv(DATA_DIR / "differential" / "activities_early.tsv", sep="\t")
+secretome_early = pd.read_csv(DATA_DIR / "differential" / "secretome_early.tsv", sep="\t")
 
-    # Objective 0: data fit (sign mismatches); Objective 1: network size (edge count)
-    print("\nObjective values:")
-    for i, obj in enumerate(problem.objectives):
-        print(f"  Objective {i}: {obj.value}")
+# %% 3. Model 1: TGFB1 → early activities
+#
+# This model asks: how does the TGFB1 stimulus propagate through the
+# signaling network to explain the observed TF/kinase activity changes?
+# TGFB1 is the only input; enzyme activities are the outputs.
 
-    active_edges = list(np.flatnonzero(problem.expr.edge_has_signal.value))
+print("=" * 60)
+print("MODEL 1: TGFB1 → early activities")
+print("=" * 60)
 
-    gr = carnival.processed_graph.plot(
-        custom_edge_attr=cn.pl.edge_style(problem, edge_var="edge_value"),
-        custom_vertex_attr=cn.pl.vertex_style(problem, carnival.processed_graph,
-                                            vertex_var="vertex_value"),
-        edge_indexes=active_edges)  # install graphviz first
+pkn_m1 = pd.read_csv(DATA_DIR / "network" / "pkn_model1.tsv", sep="\t")
+
+sample_data_m1 = {
+    "TGFB1": {"value": 1.0, "mapping": "vertex", "role": "input"},
+}
+for _, row in activities_early.iterrows():
+    if row["source"] in set(pkn_m1["source"]) | set(pkn_m1["target"]):
+        sample_data_m1[row["source"]] = {
+            "value": float(row["score"]),
+            "mapping": "vertex",
+            "role": "output",
+        }
+
+# %% 4. Model 2: activities + TGFB1 → early secretome
+#
+# This model asks: given the observed TF/kinase activities (plus TGFB1),
+# which signaling paths explain the secretome changes? Activities and
+# TGFB1 are inputs; secretome fold changes are the outputs.
+
+print("\n" + "=" * 60)
+print("MODEL 2: activities + TGFB1 → early secretome")
+print("=" * 60)
+
+pkn_m2 = pd.read_csv(DATA_DIR / "network" / "pkn_model2.tsv", sep="\t")
+pkn_m2_nodes = set(pkn_m2["source"]) | set(pkn_m2["target"])
+
+sample_data_m2 = {
+    "TGFB1": {"value": 1.0, "mapping": "vertex", "role": "input"},
+}
+for _, row in activities_early.iterrows():
+    if row["source"] in pkn_m2_nodes:
+        sample_data_m2[row["source"]] = {
+            "value": float(row["score"]),
+            "mapping": "vertex",
+            "role": "input",
+        }
+for _, row in secretome_early.iterrows():
+    if row["id"] in pkn_m2_nodes:
+        sample_data_m2[row["id"]] = {
+            "value": float(row["score"]),
+            "mapping": "vertex",
+            "role": "output",
+        }
 
 
-    gr.render(RESULTS_DIR / f"network_corneto_{lamBda}_{solver}_{time_limit}", format="pdf", cleanup=True)
-    print(f"Saved network plot to {RESULTS_DIR / 'network_corneto_{lamBda}_{solver}_{time_limit}.pdf'}")
+def run_optimization(pkn, sample_data, lambda_reg, solver, time_limit, model_name):
+    carnival, problem, data, _ = run_carnival(
+    pkn, sample_data, lambda_reg=lambda_reg,
+    solver=solver, time_limit=time_limit,
+    )
+    edges, nodes = extract_results(carnival, problem, sample_data)
 
-    edge_values = problem.expr.edge_value.value.flatten()
-    vertex_values = problem.expr.vertex_value.value.flatten()
+    print("\nModel 1 result:")
+    print_summary(edges, nodes)
 
-    edges_result = []
+    save_results(edges, nodes, model_name, RESULTS_DIR)
 
-    for i, (src, sign, tgt) in enumerate(edge_tuples):
-        if abs(edge_values[i]) > 1e-6:  # active edges only
-            edges_result.append({
-                "source": src,
-                "sign": int(sign),
-                "target": tgt,
-                "edge_value": float(edge_values[i]),
-            })
+    g_m1 = plot_network(edges, nodes)
+    g_m1.render(RESULTS_DIR / f"network_{model_name}", format="pdf", cleanup=True)
+    print(f"Saved {model_name} plot to {RESULTS_DIR / f"network_{model_name}.pdf"}")
+    return edges, nodes
 
-
-    edges_df = pd.DataFrame(edges_result).sort_values(["source", "target"]).reset_index(drop=True)
-    print(f"\nActive edges: {len(edges_df)}")
-
-    # Build node result table
-    vertex_names = carnival.processed_graph.V
-    nodes_result = []
-
-    for i, name in enumerate(vertex_names):
-        if abs(vertex_values[i]) > 1e-6:  # active nodes only
-            node_type = "intermediate"
-            if name in sample_data:
-                node_type = sample_data[name]["role"]
-            nodes_result.append({
-                "node": name,
-                "value": float(vertex_values[i]),
-                "type": node_type,
-            })
-
-    nodes_df = pd.DataFrame(nodes_result).sort_values("node").reset_index(drop=True)
-    print(f"Active nodes: {len(nodes_df)}")
-
-    edges_df.to_csv(RESULTS_DIR / f"network_edges_{lamBda}_{solver}_{time_limit}.tsv", sep="\t", index=False)
-    nodes_df.to_csv(RESULTS_DIR / f"network_nodes_{lamBda}_{solver}_{time_limit}.tsv", sep="\t", index=False)
-
-    print(f"\nSaved results to {RESULTS_DIR}:")
-    print(f"  network_edges_{lamBda}_{solver}_{time_limit}.tsv ({len(edges_df)} edges)")
-    print(f"  network_nodes_{lamBda}_{solver}_{time_limit}.tsv ({len(nodes_df)} nodes)")
-
-    if len(edges_df) > 0:
-        print(f"\nNetwork summary: lambda={lamBda}, solver={solver}, time_limit={time_limit}")
-        print(f"  Activating edges: {(edges_df['sign'] > 0).sum()}")
-        print(f"  Inhibiting edges: {(edges_df['sign'] < 0).sum()}")
-        print(f"  Input nodes: {(nodes_df['type'] == 'input').sum()}")
-        print(f"  Output nodes: {(nodes_df['type'] == 'output').sum()}")
-        print(f"  Intermediate nodes: {(nodes_df['type'] == 'intermediate').sum()}")
-    else:
-        print("\nNo active edges found. Consider adjusting lambda_reg or solver settings.")
-    return None
-
-lambda_values = [0.01,0.001]#[0.1,0.01,0.001]
-solver = ["CVXOPT", "GLPK", "GLPK_MI", "SCIP"] #["CVXOPT", "GLPK", "GLPK_MI", "HIGHS", "SCIP", "SCIPY"]
+lambda_values = [0.1,0.01,0.001]#[0.1,0.01,0.001]
+solver = ["HIGHS", "CVXOPT", "GLPK", "GLPK_MI"] #["CVXOPT", "GLPK", "GLPK_MI", "HIGHS", "SCIP", "SCIPY"]
 time_limit = [300,500]
 
 for lval in lambda_values:
     for solv in solver:
         for timel in time_limit:
-            run_optimization(lval,solv,timel, G, data)
+            edges_m1, nodes_m1 = run_optimization(pkn_m1, sample_data_m1, lval, solv, timel, f"model1_{lval}_{solv}_{timel}")
+            edges_m2, nodes_m2 = run_optimization(pkn_m2, sample_data_m2, lval, solv, timel, f"model2_{lval}_{solv}_{timel}")
+
+            print("\n" + "=" * 60)
+            print("MERGED: combined early network")
+            print("=" * 60)
+
+            edges_merged, nodes_merged = merge_networks(
+                [edges_m1, edges_m2],
+                [nodes_m1, nodes_m2],
+            )
+
+            print("\nMerged network:")
+            print_summary(edges_merged, nodes_merged)
+
+            model_name = f"network_merged_{lval}_{solv}_{timel}"
+            save_results(edges_merged, nodes_merged, model_name, RESULTS_DIR)
+
+            g_merged = plot_network(edges_merged, nodes_merged)
+            g_merged.render(RESULTS_DIR / model_name, format="pdf", cleanup=True)
+            print(f"Saved merged network plot to {RESULTS_DIR / model_name}")
 
 # %% Notes
 #
