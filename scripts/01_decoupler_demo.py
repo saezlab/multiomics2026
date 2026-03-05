@@ -63,11 +63,22 @@ print(rna_mat.head())
 # Decoupler accesses prior-knowledge from OmniPath
 
 collectri = dc.op.collectri(organism="human")
-
 print(f"\nCollecTRI regulons: {len(collectri)} interactions")
 print(f"TFs: {collectri['source'].nunique()}")
 print(f"Targets: {collectri['target'].nunique()}")
 print(collectri.head())
+
+
+####### Edited by Tanubrata#########
+# %% Get Progeny
+progeny = dc.op.progeny()
+print(f"\nCollecTRI progeny: {len(progeny)} interactions")
+print(f"TFs: {progeny['source'].nunique()}")
+print(f"Targets: {progeny['target'].nunique()}")
+print(progeny.head())
+
+####################################
+
 
 # %% Run Univariate Linear Model (ULM)
 # ULM fits a linear model for each TF, using the TF's targets' fold changes
@@ -83,6 +94,22 @@ print(
     f"{((pvals < 0.05) & (acts.abs() > 2)).sum(axis = 1)}"
 )
 
+
+######### Edited bt Tanubrata ########
+# %% Run Univariate Linear Model (ULM)
+
+acts1, pvals1 = dc.mt.ulm(rna_mat.T, progeny)
+
+print(f"\nProgeny activity scores: {acts1.shape}")
+print(
+    "Number of significant Progenies (p < 0.05 and |score| > 2) in "
+    "each time point: \n\n"
+    f"{((pvals1 < 0.05) & (acts1.abs() > 2)).sum(axis = 1)}"
+)
+
+######################################
+
+
 # %% Select TFs with significant activity in at least one time point
 #
 # acts has shape (time_points x TFs), so we check per-TF across time (axis=0)
@@ -92,6 +119,20 @@ sig_tfs = sig_mask.any(axis=0)
 acts_sig = acts.loc[:, sig_tfs].copy()
 
 print(f"\nSignificant TFs (|score| > 2 and p < 0.05): {acts_sig.shape[1]}")
+
+
+############  Edited by Tanubrata ##############
+# %% Select TFs with significant activity in at least one time point
+#
+# acts has shape (time_points x TFs), so we check per-TF across time (axis=0)
+
+sig_mask1 = (pvals1 < 0.05) & (acts1.abs() > 2)
+sig_tfs1 = sig_mask1.any(axis=0)
+acts_sig1 = acts1.loc[:, sig_tfs1].copy()
+
+print(f"\nSignificant TFs (|score| > 2 and p < 0.05): {acts_sig1.shape[1]}")
+##################################################
+
 
 # %% Visualize: heatmap of TF activities across time
 #
@@ -121,6 +162,38 @@ plt.savefig(RESULTS_DIR / "tf_activities_heatmap.pdf", bbox_inches="tight")
 plt.savefig(RESULTS_DIR / "tf_activities_heatmap.png", dpi=150, bbox_inches="tight")
 print(f"\nSaved heatmap to {RESULTS_DIR / 'tf_activities_heatmap.pdf'}")
 plt.show()
+
+
+######## Edited by Tanubrata #############
+
+# Sort TFs by their maximum absolute activity
+max_act1 = acts_sig1.abs().max(axis=0).sort_values(ascending=False)
+top_tfs1 = max_act1.index[:30]
+# TFs as rows, time points as columns
+acts_plot1 = acts_sig1[top_tfs1].T
+
+fig, ax = plt.subplots(figsize=(8, 10))
+sns.heatmap(
+    acts_plot1,
+    cmap="RdBu_r",
+    center=0,
+    xticklabels=True,
+    yticklabels=True,
+    ax=ax,
+    cbar_kws={"label": "Progenitor activity (ULM score)"},
+)
+ax.set_title("TF activities upon TGF-β stimulation\n(top 30 by max |score|)")
+ax.set_xlabel("Time after TGF-β stimulation")
+ax.set_ylabel("Transcription factor")
+plt.tight_layout()
+plt.savefig(RESULTS_DIR / "progenitor_activities_heatmap.pdf", bbox_inches="tight")
+plt.savefig(RESULTS_DIR / "progenitor_activities_heatmap.png", dpi=150, bbox_inches="tight")
+print(f"\nSaved heatmap to {RESULTS_DIR / 'progenitor_activities_heatmap.pdf'}")
+plt.show()
+
+##########################################
+
+
 
 # %% Save TF activity results
 
