@@ -17,4 +17,6 @@ dependencies = [
     "matplotlib>=3.5",
     "graphviz>=0.20",
     "seaborn>=0.13",
+    "igraph>=1.0.0",
+    "upsetplot>=0.9",
 ]
