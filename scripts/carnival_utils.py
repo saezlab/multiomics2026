@@ -147,9 +147,19 @@ def save_results(edges_df, nodes_df, prefix, results_dir):
     """Save edge and node tables to TSV files."""
     results_dir = Path(results_dir)
     results_dir.mkdir(exist_ok=True)
-    edges_df.to_csv(results_dir / f"{prefix}_edges.tsv", sep="\t", index=False)
-    nodes_df.to_csv(results_dir / f"{prefix}_nodes.tsv", sep="\t", index=False)
+    x = results_dir / f"{prefix}_edges.tsv"
+    print(f"Saved edges to {x}")
+    edges_df.to_csv(x, sep="\t", index=False)
+
+    y = results_dir / f"{prefix}_nodes.tsv"
+    print(f"Saved nodes to {y}")
+    nodes_df.to_csv(y, sep="\t", index=False)
     print(f"Saved {prefix}: {len(edges_df)} edges, {len(nodes_df)} nodes")
+    
+    print(x.exists()) 
+    print(y.exists()) 
+
+
 
 
 def load_results(prefix, results_dir):

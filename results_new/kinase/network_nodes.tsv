@@ -1,136 +1,140 @@
-node	vertex_value
-ACAT1	-1.0
-ADAM19	1.0
-AKT1	1.0
-AKT3	1.0
-ALOX12B	1.0
-AMIGO2	1.0
-ANP32A	-1.0
-ANP32B	-1.0
-ARF4	-1.0
-ATF6	1.0
-ATM	-1.0
-AURKB	-1.0
-BCL6	-1.0
-BGN	1.0
-BLMH	1.0
-BRCA1	1.0
-C1QBP	-1.0
-C1QTNF5	1.0
-CCN2	1.0
-CD63	1.0
-CDC42	-1.0
-CDK3	-1.0
-CEBPB	-1.0
-CHEK1	-1.0
-CPE	-1.0
-CREB1	1.0
-CSNK2A1	1.0
-CSNK2A2	1.0
-CSPG4	1.0
-CSTB	1.0
-CTNNB1	1.0
-CTSV	1.0
-DKK1	1.0
-DKK3	1.0
-DLST	1.0
-E2F1	-1.0
-E2F4	-1.0
-ECM1	1.0
-EEF1B2	-1.0
-EEF1D	-1.0
-EGFR	-1.0
-EIF2S2	-1.0
-ETS2	1.0
-FOXO1	1.0
-FOXO3	-1.0
-GATA2	1.0
-GDF5	-1.0
-GDF6	1.0
-GOLM1	1.0
-GREM1	1.0
-HDAC6	1.0
-HSPG2	-1.0
-HTRA1	1.0
-IGFBP3	1.0
-IGFBP7	1.0
-IL11	1.0
-INHBA	1.0
-IRF1	1.0
-JAK2	1.0
-JUN	1.0
-KLC1	1.0
-KLF5	-1.0
-LFNG	1.0
-LGALS1	-1.0
-LTBP4	1.0
-MACROH2A1	1.0
-MAP2K1	1.0
-MAPK1	-1.0
-MAPKAPK2	1.0
-MMP11	1.0
-MMP14	1.0
-MMP2	1.0
-MYC	1.0
-NAP1L4	-1.0
-NFKB2	-1.0
-NKX3-1	1.0
-NOG	-1.0
-NRF1	-1.0
-NRP2	1.0
-NUCB1	1.0
-PDIA5	1.0
-PFDN4	-1.0
-PHB2	1.0
-PIN1	1.0
-PLK3	-1.0
-PNP	1.0
-POSTN	1.0
-PPM1G	-1.0
-PPP2CB	-1.0
-PRDX3	-1.0
-PRDX5	-1.0
-PRKAA2	-1.0
-PRKCA	1.0
-PRKCZ	-1.0
-PRKD1	1.0
-PRKG1	1.0
-PRKG2	1.0
-PRNP	1.0
-PSMB2	1.0
-PTX3	-1.0
-RAF1	-1.0
-RBBP4	-1.0
-RBBP7	-1.0
-RBPJ	1.0
-RCN1	1.0
-RELA	1.0
-ROCK1	-1.0
-ROCK2	-1.0
-RPS15A	-1.0
-RPS6KA1	1.0
-RPS6KA3	1.0
-RPS6KB1	1.0
-SERPINE1	1.0
-SERPINE2	1.0
-SET	-1.0
-SFRP2	1.0
-SLC39A10	1.0
-SMAD3	1.0
-SMAD4	-1.0
-SMARCA1	1.0
-SNCA	-1.0
-SP1	-1.0
-SPARC	1.0
-SREBF1	-1.0
-STAT1	-1.0
-STAT3	1.0
-STAT5A	-1.0
-TAGLN2	-1.0
-TGFB1	1.0
-TGFBI	1.0
-TOR1A	1.0
-TUBA4A	-1.0
-UHMK1	-1.0
-UROD	1.0
-VDAC1	1.0
+node	value	type
+ACAT1	-1.0	output
+ADAM19	1.0	output
+AKT1	1.0	input
+AKT3	1.0	input
+ALOX12B	1.0	output
+AMIGO2	1.0	output
+ANP32A	-1.0	output
+ANP32B	-1.0	output
+ARF4	-1.0	output
+ATF3	-1.0	intermediate
+ATF6	1.0	intermediate
+ATM	-1.0	intermediate
+AURKB	-1.0	input
+BGN	1.0	output
+BLMH	1.0	output
+BRCA1	1.0	intermediate
+C1QBP	-1.0	output
+C1QTNF5	1.0	output
+CCN2	1.0	output
+CD63	1.0	output
+CDC42	-1.0	output
+CDK3	-1.0	input
+CDKN1A	1.0	intermediate
+CEBPB	-1.0	intermediate
+CFB	-1.0	intermediate
+CHEK1	-1.0	input
+CPE	-1.0	output
+CREB1	1.0	intermediate
+CSNK2A1	1.0	input
+CSNK2A2	1.0	input
+CSPG4	1.0	output
+CSTB	1.0	output
+CTNNB1	1.0	intermediate
+CTSV	1.0	output
+DKK1	1.0	output
+DKK3	1.0	output
+DLST	1.0	output
+E2F4	-1.0	intermediate
+ECM1	1.0	output
+EEF1B2	-1.0	output
+EEF1D	-1.0	output
+EGF	-1.0	intermediate
+EGR1	1.0	intermediate
+EGR2	1.0	intermediate
+ETS2	1.0	intermediate
+FOXO1	1.0	intermediate
+GDF5	-1.0	output
+GDF6	1.0	output
+GOLM1	1.0	output
+GREM1	1.0	output
+HDAC6	1.0	intermediate
+HSPG2	-1.0	output
+HTRA1	1.0	output
+IGFBP3	1.0	output
+IGFBP7	1.0	output
+IL11	1.0	output
+INHBA	1.0	output
+IRF2	1.0	intermediate
+JAK2	1.0	intermediate
+JUN	1.0	intermediate
+KLC1	1.0	intermediate
+KLF5	-1.0	intermediate
+LFNG	1.0	output
+LGALS1	-1.0	output
+LTBP4	1.0	output
+MACROH2A1	1.0	output
+MAP2K1	1.0	input
+MAPK1	-1.0	intermediate
+MAPKAPK2	1.0	input
+MMP11	1.0	output
+MMP14	1.0	output
+MMP2	1.0	output
+MYC	1.0	intermediate
+NAP1L4	-1.0	output
+NFKB1	-1.0	intermediate
+NKX3-1	1.0	intermediate
+NOG	-1.0	intermediate
+NOTCH1	1.0	intermediate
+NRF1	-1.0	intermediate
+NRP2	1.0	output
+NUCB1	1.0	output
+OXSR1	-1.0	intermediate
+PDIA5	1.0	output
+PFDN4	-1.0	output
+PHB2	1.0	output
+PIN1	1.0	output
+PLK3	-1.0	input
+PNP	1.0	output
+POSTN	1.0	output
+PPM1G	-1.0	output
+PPP2CB	-1.0	input
+PRDX3	-1.0	output
+PRDX5	-1.0	output
+PRKCA	1.0	intermediate
+PRKCZ	-1.0	input
+PRKD1	1.0	input
+PRKG1	1.0	input
+PRKG2	1.0	input
+PRNP	1.0	output
+PSMB2	1.0	output
+PTX3	-1.0	output
+RAF1	-1.0	input
+RB1	1.0	intermediate
+RBBP4	-1.0	output
+RBBP7	-1.0	output
+RCN1	1.0	output
+RELA	1.0	intermediate
+ROCK1	-1.0	input
+ROCK2	-1.0	input
+RPS15A	-1.0	output
+RPS6KA1	1.0	input
+RPS6KA3	1.0	input
+RPS6KB1	1.0	input
+SEMA3B	1.0	intermediate
+SERPINE1	1.0	output
+SERPINE2	1.0	output
+SET	-1.0	output
+SFRP2	1.0	output
+SLC39A10	1.0	output
+SMAD3	1.0	intermediate
+SMAD4	-1.0	intermediate
+SMARCA1	1.0	output
+SNCA	-1.0	intermediate
+SP1	-1.0	intermediate
+SP3	1.0	intermediate
+SPARC	1.0	output
+SREBF1	-1.0	intermediate
+STAT3	1.0	intermediate
+TAGLN2	-1.0	output
+TGFB1	1.000000000000007	input
+TGFBI	1.0	output
+TGFBR2	-1.0	intermediate
+TOR1A	1.0	output
+TP53	1.0	intermediate
+TUBA4A	-1.0	output
+UHMK1	-1.0	input
+UROD	1.0	output
+VDAC1	1.0	output
+ZBTB4	-1.0	intermediate

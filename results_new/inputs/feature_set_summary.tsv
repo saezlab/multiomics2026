@@ -1,4 +1,4 @@
-feature_set	tag	n_inputs_activities_early	n_outputs_secretome_early	n_late_activities	pkn_edges	pkn_nodes
-TF	tf	34	74	25	48798	3483
-Kinase	kinase	22	74	21	48805	3483
-Both	both	56	74	46	48806	3484
+feature_set	tag	n_activities_early	n_secretome_early	n_activities_late	pkn_model1_edges	pkn_model2_edges	pkn_model3_edges	pkn_model1_nodes	pkn_model2_nodes	pkn_model3_nodes
+TF	tf	34	81	27	48678	48798	48726	3449	3483	3459
+Kinase	kinase	22	81	21	48690	48805	48712	3452	3483	3462
+Both	both	56	81	48	48690	48806	48741	3452	3484	3463
