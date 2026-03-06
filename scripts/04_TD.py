@@ -1,39 +1,23 @@
 """
-Visualize results for:
-- tf
-- kinase
-- both
+Network visualization and interpretation (TF-only / Kinase-only / Both).
 
-Reads:
-- results/<tag>/network_edges.tsv
-- results/<tag>/network_nodes.tsv (optional)
-- data/differential/activities_early_<tag>.tsv
-- data/differential/secretome_early_<tag>.tsv
+Per tag:
+- loads merged network results from results/<tag>/
+- plots our network and the published early network in the same style
+- prints edge/node overlap and degree distribution
 
-Writes:
-- results/<tag>/network.pdf + network.png
-- results/<tag>/degree_distribution.pdf + degree_distribution.png
-- results/<tag>/hubs.tsv
+Requires carnival_utils.load_results + carnival_utils.plot_network.
 """
 
-from __future__ import annotations
-
-from pathlib import Path
 import pandas as pd
-
-import matplotlib
-matplotlib.use("Agg")
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-import graphviz
+from pathlib import Path
 
+import corneto as cn
+from corneto.graph import Graph
 
-# -----------------------------------------------------------------------------
-# Config
-# -----------------------------------------------------------------------------
-FEATURE_TAGS = ["tf", "kinase", "both"]
-SHOW_PLOTS = False
-
+from carnival_utils import load_results, plot_network
 
 # -----------------------------------------------------------------------------
 # Paths
@@ -46,94 +30,113 @@ except NameError:
 DATA_DIR = _script_root / "data" if (_script_root / "data").is_dir() else Path("data")
 RESULTS_DIR = _script_root / "results_new" if (_script_root / "data").is_dir() else Path("results_new")
 
+# -----------------------------------------------------------------------------
+# Config
+# -----------------------------------------------------------------------------
+TAGS = ["tf", "kinase", "both"]
 
 # -----------------------------------------------------------------------------
-# Helpers
+# Load published network once
 # -----------------------------------------------------------------------------
-def build_network_graph(edges_df: pd.DataFrame, input_nodes: set[str], output_nodes: set[str]) -> graphviz.Digraph:
-    g = graphviz.Digraph(
-        engine="dot",
-        graph_attr={"rankdir": "TB", "overlap": "false", "splines": "true", "fontname": "Helvetica"},
-        node_attr={"shape": "box", "style": "rounded,filled", "fontname": "Helvetica", "fontsize": "10"},
-        edge_attr={"fontname": "Helvetica", "fontsize": "8"},
-    )
+paper_edges = pd.read_csv(DATA_DIR / "network" / "paper_edges.tsv", sep="\t")
+paper_nodes = pd.read_csv(DATA_DIR / "network" / "paper_nodes.tsv", sep="\t")
 
-    if edges_df.empty:
-        return g
+paper_early = paper_edges[paper_edges["network"] == "early"].copy()
+paper_early_nodes = paper_nodes[paper_nodes["network"] == "early"].copy()
 
-    nodes = set(edges_df["source"]) | set(edges_df["target"])
+paper_early["sign_int"] = paper_early["sign"].str.strip("()").astype(int)
 
-    for n in sorted(nodes):
-        if n == "TGFB1":
-            g.node(n, fillcolor="#ff6b6b", fontcolor="white")
-        elif n in input_nodes:
-            g.node(n, fillcolor="#ffb3b3")
-        elif n in output_nodes:
-            g.node(n, fillcolor="#b3e6b3")
-        else:
-            g.node(n, fillcolor="#f0f0f0")
+paper_edge_tuples = list(zip(paper_early["source"], paper_early["sign_int"], paper_early["target"]))
+G_paper = Graph.from_tuples(paper_edge_tuples)
 
-    for _, row in edges_df.iterrows():
-        edge_color = "red" if float(row["edge_value"]) > 0 else "blue"
-        arrowhead = "normal" if int(row["sign"]) > 0 else "tee"
-        g.edge(str(row["source"]), str(row["target"]), color=edge_color, arrowhead=arrowhead)
+PAPER_ROLE_MAP = {
+    "TF": "input",
+    "Kinase/ phosphatase": "input",
+    "Secreted proteins": "output",
+}
 
-    return g
+paper_sample_data = {}
+for _, row in paper_early_nodes.iterrows():
+    role = PAPER_ROLE_MAP.get(row["type"])
+    if role:
+        paper_sample_data[row["node"]] = {"value": float(row["value"]), "mapping": "vertex", "role": role}
 
+paper_data = cn.Data.from_cdict({"early": paper_sample_data})
+paper_vertex_map = dict(zip(paper_early_nodes["node"], paper_early_nodes["value"]))
+paper_vertex_values = [float(paper_vertex_map.get(name, 0.0)) for name in G_paper.V]
+paper_edge_values = list(paper_early["sign_int"])
 
-def degree_plots(out_dir: Path, edges_df: pd.DataFrame) -> None:
-    if edges_df.empty:
-        return
+g_paper = G_paper.plot(
+    preset="signaling",
+    feature_data=paper_data,
+    solution={"v": paper_vertex_values, "e": paper_edge_values},
+    solution_map={"vertex": "v", "edge": "e"},
+)
 
-    deg = {}
-    for _, r in edges_df.iterrows():
-        s = str(r["source"])
-        t = str(r["target"])
-        deg[s] = deg.get(s, 0) + 1
-        deg[t] = deg.get(t, 0) + 1
-
-    hubs = sorted(deg.items(), key=lambda x: x[1], reverse=True)
-    hubs_df = pd.DataFrame(hubs, columns=["node", "degree"])
-    hubs_df.to_csv(out_dir / "hubs.tsv", sep="\t", index=False)
-
-    fig, ax = plt.subplots(figsize=(5, 4))
-    sns.histplot(list(deg.values()), bins=20, ax=ax)
-    ax.set_title("Degree distribution")
-    ax.set_xlabel("Degree")
-    ax.set_ylabel("Count")
-    plt.tight_layout()
-    fig.savefig(out_dir / "degree_distribution.pdf", bbox_inches="tight")
-    fig.savefig(out_dir / "degree_distribution.png", dpi=150, bbox_inches="tight")
-    if SHOW_PLOTS:
-        plt.show()
-    plt.close(fig)
-
-
-def visualize_tag(tag: str) -> None:
+# -----------------------------------------------------------------------------
+# Per tag visualization + comparison
+# -----------------------------------------------------------------------------
+for tag in TAGS:
     out_dir = RESULTS_DIR / tag
-    edges_path = out_dir / "network_edges.tsv"
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    if not edges_path.exists():
-        print(f"[skip] missing {edges_path}")
-        return
+    # Our merged network
+    edges, nodes = load_results("network", out_dir)
+    print(f"\n[{tag}] Our network: {len(edges)} edges, {len(nodes)} nodes")
 
-    edges = pd.read_csv(edges_path, sep="\t")
-
-    activities_early = pd.read_csv(DATA_DIR / "differential" / f"activities_early_{tag}.tsv", sep="\t")
-    secretome_early = pd.read_csv(DATA_DIR / "differential" / f"secretome_early_{tag}.tsv", sep="\t")
-
-    input_nodes = set(activities_early["source"]) | {"TGFB1"}
-    output_nodes = set(secretome_early["id"])
-
-    g = build_network_graph(edges, input_nodes, output_nodes)
+    g = plot_network(edges, nodes)
     g.render(out_dir / "network", format="pdf", cleanup=True)
     g.render(out_dir / "network", format="png", cleanup=True)
 
-    degree_plots(out_dir, edges)
+    # Paper network (same in each folder for convenience)
+    g_paper.render(out_dir / "network_paper_early", format="pdf", cleanup=True)
+    g_paper.render(out_dir / "network_paper_early", format="png", cleanup=True)
 
-    print(f"[done] {tag}: {len(edges)} edges -> {out_dir}")
+    # Edge overlap
+    paper_pairs = set(zip(paper_early["source"], paper_early["target"]))
+    our_pairs = set(zip(edges["source"], edges["target"])) if len(edges) else set()
 
+    overlap = paper_pairs & our_pairs
+    only_paper = paper_pairs - our_pairs
+    only_ours = our_pairs - paper_pairs
 
-if __name__ == "__main__":
-    for tag in FEATURE_TAGS:
-        visualize_tag(tag)
+    print(f"[{tag}] Edge comparison vs published early:")
+    print(f"  Shared edges: {len(overlap)}")
+    print(f"  Only in published: {len(only_paper)}")
+    print(f"  Only in ours: {len(only_ours)}")
+
+    if len(paper_pairs | our_pairs) > 0:
+        jaccard = len(overlap) / len(paper_pairs | our_pairs)
+        print(f"  Jaccard similarity: {jaccard:.3f}")
+
+    # Node overlap
+    paper_node_set = set(paper_early_nodes["node"])
+    our_node_set = set(nodes["node"]) if len(nodes) else set()
+    node_overlap = paper_node_set & our_node_set
+
+    print(f"[{tag}] Node comparison:")
+    print(f"  Shared nodes: {len(node_overlap)}")
+    print(f"  Only in published: {len(paper_node_set - our_node_set)}")
+    print(f"  Only in ours: {len(our_node_set - paper_node_set)}")
+
+    # Degree distribution
+    if len(edges) > 0:
+        degree = pd.concat([
+            edges["source"].value_counts().rename("out_degree"),
+            edges["target"].value_counts().rename("in_degree"),
+        ], axis=1).fillna(0).astype(int)
+        degree["total_degree"] = degree["out_degree"] + degree["in_degree"]
+        degree = degree.sort_values("total_degree", ascending=False)
+
+        # Save hubs
+        degree.to_csv(out_dir / "degree_table.tsv", sep="\t")
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.hist(degree["total_degree"], bins=20, edgecolor="black", alpha=0.7)
+        ax.set_xlabel("Node degree")
+        ax.set_ylabel("Count")
+        ax.set_title(f"Degree distribution ({tag})")
+        plt.tight_layout()
+        plt.savefig(out_dir / "degree_distribution.pdf", bbox_inches="tight")
+        plt.savefig(out_dir / "degree_distribution.png", dpi=150, bbox_inches="tight")
+        plt.close(fig)
